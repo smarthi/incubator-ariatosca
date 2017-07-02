@@ -41,14 +41,15 @@ class Engine(logger.LoggerMixin):
         self._executors = executors.copy()
         self._executors.setdefault(StubTaskExecutor, StubTaskExecutor())
 
-    def execute(self, ctx, resuming=False):
+    def execute(self, ctx, resuming=False, retry_failing=False):
         """
         Executes the workflow.
         """
         if resuming:
             events.on_resume_workflow_signal.send(ctx)
 
-        tasks_tracker = _TasksTracker(ctx)
+        tasks_tracker = _TasksTracker(ctx, retry_failing)
+
         try:
             events.start_workflow_signal.send(ctx)
             while True:
@@ -124,12 +125,36 @@ class Engine(logger.LoggerMixin):
 
 
 class _TasksTracker(object):
-    def __init__(self, ctx):
+
+    def __init__(self, ctx, retry_failing=False):
         self._ctx = ctx
+
+        if retry_failing:
+            self._has_task_ended = self._retry_failed_has_task_ended
+            self._is_task_waiting = self._retry_failed_is_task_waiting
+
         self._tasks = ctx.execution.tasks
-        self._executed_tasks = [task for task in self._tasks if task.has_ended()]
+        self._executed_tasks = [task for task in self._tasks if self._has_task_ended(task)]
         self._executable_tasks = list(set(self._tasks) - set(self._executed_tasks))
         self._executing_tasks = []
+
+    @staticmethod
+    def _retry_failed_has_task_ended(task):
+        # only succeeded tasks have ended (for retry failing)
+        return task.status == task.SUCCESS or (task.status == task.FAILED and task.ignore_failure)
+
+    @staticmethod
+    def _retry_failed_is_task_waiting(task):
+        # failed tasks are waiting to be executed (for retry failing)
+        return task.is_waiting()
+
+    @staticmethod
+    def _has_task_ended(task):
+        return task.has_ended()
+
+    @staticmethod
+    def _is_task_waiting(task):
+        return task.is_waiting()
 
     @property
     def all_tasks_consumed(self):
@@ -148,15 +173,15 @@ class _TasksTracker(object):
     @property
     def ended_tasks(self):
         for task in self.executing_tasks:
-            if task.has_ended():
+            if self._has_task_ended(task):
                 yield task
 
     @property
     def executable_tasks(self):
         now = datetime.utcnow()
         # we need both lists since retrying task are in the executing task list.
-        for task in self._update_tasks(self._executing_tasks + self._executable_tasks):
-            if all([task.is_waiting(),
+        for task in self._update_tasks(set(self._executing_tasks + self._executable_tasks)):
+            if all([self._is_task_waiting(task),
                     task.due_at <= now,
                     all(dependency in self._executed_tasks for dependency in task.dependencies)
                    ]):
