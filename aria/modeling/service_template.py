@@ -622,7 +622,7 @@ class NodeTemplateBase(TemplateModelMixin):
 
     def instantiate(self, container):
         from . import models
-        node = models.Node(name=self.next_name,
+        node = models.Node(name=self._next_name,
                            type=self.type,
                            description=deepcopy_with_locators(self.description),
                            state=models.Node.INITIAL,
@@ -672,31 +672,6 @@ class NodeTemplateBase(TemplateModelMixin):
             utils.dump_dict_values(self.artifact_templates, 'Artifact templates')
             utils.dump_dict_values(self.capability_templates, 'Capability templates')
             utils.dump_list_values(self.requirement_templates, 'Requirement templates')
-
-    @property
-    def next_index(self):
-        """
-        Next available node index.
-
-        :returns: node index
-        :rtype: int
-        """
-
-        max_index = 0
-        if self.nodes:
-            max_index = max(int(n.name.rsplit('_', 1)[-1]) for n in self.nodes)
-        return max_index + 1
-
-    @property
-    def next_name(self):
-        """
-        Next available node name.
-
-        :returns: node name
-        :rtype: basestring
-        """
-
-        return '{name}_{index}'.format(name=self.name, index=self.next_index)
 
     @property
     def scaling(self):
@@ -763,6 +738,31 @@ class NodeTemplateBase(TemplateModelMixin):
                 if not node_template_constraint.matches(self, target_node_template):
                     return False
         return True
+
+    @property
+    def _next_index(self):
+        """
+        Next available node index.
+
+        :returns: node index
+        :rtype: int
+        """
+
+        max_index = 0
+        if self.nodes:
+            max_index = max(int(n.name.rsplit('_', 1)[-1]) for n in self.nodes)
+        return max_index + 1
+
+    @property
+    def _next_name(self):
+        """
+        Next available node name.
+
+        :returns: node name
+        :rtype: basestring
+        """
+
+        return '{name}_{index}'.format(name=self.name, index=self._next_index)
 
 
 class GroupTemplateBase(TemplateModelMixin):
