@@ -211,6 +211,10 @@ def dump_interfaces(interfaces, name='Interfaces'):
             interface.dump()
 
 
+def parameters_as_values(the_dict):
+    return dict((k, v.value) for k, v in the_dict.iteritems())
+
+
 def dict_as_arguments(the_dict):
     return OrderedDict((name, value.as_argument()) for name, value in the_dict.iteritems())
 

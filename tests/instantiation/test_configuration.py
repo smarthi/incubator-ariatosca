@@ -16,6 +16,7 @@
 import pytest
 
 from tests.parser.service_templates import consume_literal
+from aria.modeling.utils import parameters_as_values
 
 
 TEMPLATE = """
@@ -116,23 +117,19 @@ def broken_service_issues():
     yield context.validation.issues
 
 
-def _values(the_dict):
-    return dict((k, v.value) for k, v in the_dict.iteritems())
-
-
 def test_local(service):
     interface = service.nodes['local_node_1'].interfaces['MyInterface']
     operation = interface.operations['operation']
-    assert _values(interface.inputs) == {
+    assert parameters_as_values(interface.inputs) == {
         'interface_string': 'value1',
         'interface_integer': 1
     }
-    assert _values(operation.inputs) == {
+    assert parameters_as_values(operation.inputs) == {
         'operation_string': 'value2',
         'operation_integer': 2,
         'interface_integer': 3
     }
-    assert _values(operation.arguments) == {
+    assert parameters_as_values(operation.arguments) == {
         'process': {},
         'script_path': 'operation.sh',
         'interface_string': 'value1',
@@ -145,16 +142,16 @@ def test_local(service):
 def test_remote(service):
     interface = service.nodes['remote_node_1'].interfaces['MyInterface']
     operation = interface.operations['operation']
-    assert _values(interface.inputs) == {
+    assert parameters_as_values(interface.inputs) == {
         'interface_string': 'value1',
         'interface_integer': 1
     }
-    assert _values(operation.inputs) == {
+    assert parameters_as_values(operation.inputs) == {
         'operation_string': 'value2',
         'operation_integer': 2,
         'interface_integer': 3
     }
-    assert _values(operation.arguments) == {
+    assert parameters_as_values(operation.arguments) == {
         'process': {},
         'use_sudo': False,
         'fabric_env': {'user': '', 'password': '', 'key': None, 'key_filename': None},
