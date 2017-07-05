@@ -119,7 +119,7 @@ class WorkflowRunner(object):
 
     def execute(self):
         self._engine.execute(
-            ctx=self._workflow_context, resuming=self._is_resume, retry_failing=self._retry_failed)
+            ctx=self._workflow_context, resuming=self._is_resume, retry_failed=self._retry_failed)
 
     def cancel(self):
         self._engine.cancel_execution(ctx=self._workflow_context)
