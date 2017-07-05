@@ -114,6 +114,10 @@ def _workflow_cancelled(workflow_context, *args, **kwargs):
         elif execution.status in (execution.SUCCEEDED, execution.FAILED):
             _log_tried_to_cancel_execution_but_it_already_ended(workflow_context, execution.status)
         else:
+            # Any non ended task would be put back to pending state
+            for task in execution.tasks:
+                if not task.has_ended():
+                    task.status = task.PENDING
             execution.status = execution.CANCELLED
             execution.ended_at = datetime.utcnow()
 

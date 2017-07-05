@@ -54,7 +54,7 @@ class ThreadExecutor(BaseExecutor):
     def close(self):
         self._stopped = True
         for thread in self._pool:
-            thread.join()
+            thread.join(5)
 
     def _processor(self):
         while not self._stopped:
